@@ -1,6 +1,8 @@
+#![feature(associated_type_bounds)]
+
 use std::{
     fmt::{Debug, Display, Formatter},
-    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
+    ops::{Add, AddAssign, BitXor, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
 pub trait Field:
@@ -65,9 +67,20 @@ pub trait Field:
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct GF<T>(pub T);
 
-pub type GF256 = GF<u8>;
+impl<T> GF<T> {
+    pub fn new(inner: T) -> Self {
+        Self(inner)
+    }
+}
 
-impl Field for GF256 {
+pub type GFU8 = GF<u8>;
+pub type GF256 = GFU8;
+pub type GFU16 = GF<u16>;
+pub type GFU32 = GF<u32>;
+pub type GFU64 = GF<u64>;
+pub type GFU128 = GF<u128>;
+
+impl Field for GF<u8> {
     const ZERO: Self = Self(0);
     const ONE: Self = Self(1);
 
@@ -92,58 +105,7 @@ impl Field for GF256 {
     }
 }
 
-impl Display for GF256 {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl Add for GF256 {
-    type Output = GF256;
-
-    fn add(self, other: GF256) -> GF256 {
-        let mut result = self;
-        result.add_assign(other);
-        result
-    }
-}
-
-#[allow(clippy::suspicious_op_assign_impl)]
-impl AddAssign for GF256 {
-    fn add_assign(&mut self, other: GF256) {
-        *self = GF(self.0 ^ other.0);
-    }
-}
-
-impl Sub for GF256 {
-    type Output = GF256;
-
-    fn sub(self, other: GF256) -> GF256 {
-        let mut result = self;
-        result.sub_assign(other);
-        result
-    }
-}
-
-#[allow(clippy::suspicious_op_assign_impl)]
-impl SubAssign for GF256 {
-    fn sub_assign(&mut self, other: GF256) {
-        *self = GF(self.0 ^ other.0);
-    }
-}
-
-impl Mul for GF256 {
-    type Output = GF256;
-
-    fn mul(self, rhs: GF256) -> GF256 {
-        let mut result = self;
-        result.mul_assign(rhs);
-        result
-    }
-}
-
-#[allow(clippy::suspicious_op_assign_impl)]
-impl MulAssign for GF256 {
+impl MulAssign for GF<u8> {
     fn mul_assign(&mut self, rhs: GF256) {
         let a = self.0;
         let mut b = rhs.0;
@@ -173,7 +135,72 @@ impl MulAssign for GF256 {
     }
 }
 
-impl Div for GF256 {
+impl DivAssign for GF<u8> {
+    fn div_assign(&mut self, rhs: GF256) {
+        *self *= rhs.inverse().unwrap();
+    }
+}
+
+impl<T: Display> Display for GF<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl<T> Add for GF<T>
+where
+    Self: AddAssign,
+{
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self {
+        let mut result = self;
+        result.add_assign(rhs);
+        result
+    }
+}
+
+impl<T: BitXor<Output = T> + Copy> AddAssign for GF<T> {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = Self(self.0 ^ rhs.0);
+    }
+}
+
+impl<T> Sub for GF<T>
+where
+    Self: SubAssign,
+{
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self {
+        let mut result = self;
+        result.sub_assign(rhs);
+        result
+    }
+}
+impl<T: BitXor<Output = T> + Copy> SubAssign for GF<T> {
+    fn sub_assign(&mut self, rhs: Self) {
+        *self = Self(self.0 ^ rhs.0);
+    }
+}
+
+impl<T> Mul for GF<T>
+where
+    Self: MulAssign,
+{
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self {
+        let mut result = self;
+        result.mul_assign(rhs);
+        result
+    }
+}
+
+impl<T> Div for GF<T>
+where
+    Self: DivAssign,
+{
     type Output = Self;
 
     fn div(self, rhs: Self) -> Self {
@@ -183,16 +210,10 @@ impl Div for GF256 {
     }
 }
 
-impl DivAssign for GF256 {
-    fn div_assign(&mut self, rhs: GF256) {
-        *self *= rhs.inverse().unwrap();
-    }
-}
+impl<T> Neg for GF<T> {
+    type Output = Self;
 
-impl Neg for GF256 {
-    type Output = GF256;
-
-    fn neg(self) -> GF256 {
+    fn neg(self) -> Self {
         self
     }
 }
