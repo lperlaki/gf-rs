@@ -14,6 +14,7 @@
 
 use std::{
     fmt::{Debug, Display, Formatter},
+    iter::{Product, Sum},
     ops::{Add, AddAssign, BitXor, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
@@ -38,6 +39,8 @@ pub trait Field:
     + Mul<Output = Self>
     + MulAssign
     + Neg<Output = Self>
+    + Product
+    + Sum
 {
     const ZERO: Self;
     const ONE: Self;
@@ -83,7 +86,7 @@ pub trait Field:
 ///
 /// ```
 /// use gf::{GF, GF256};
-/// 
+///
 /// let val = GF(4);
 ///
 /// let typed_val1 = GF(5u8);
@@ -196,6 +199,24 @@ impl DivAssign for GF<u8> {
 impl<T: Display> Display for GF<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+impl<T> Sum for GF<T>
+where
+    Self: Field,
+{
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(Self::zero(), |a, b| a + b)
+    }
+}
+
+impl<T> Product for GF<T>
+where
+    Self: Field,
+{
+    fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(Self::one(), |a, b| a * b)
     }
 }
 
