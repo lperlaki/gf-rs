@@ -1,10 +1,23 @@
 #![feature(associated_type_bounds)]
 
+//! # Galois Field
+//!
+//! finite field arithmetic
+//!
+//! ```
+//! use gf::GF;
+//!
+//! let x = GF(123u8);
+//! let y = GF(225u8);
+//! println!("{}", x + y);
+//! ```
+
 use std::{
     fmt::{Debug, Display, Formatter},
     ops::{Add, AddAssign, BitXor, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
+/// Functions of A Field
 pub trait Field:
     'static
     + Sized
@@ -66,6 +79,17 @@ pub trait Field:
     fn idx(&self) -> usize;
 }
 
+/// # The Golias Field Type.
+///
+/// ```
+/// let val = GF(4);
+///
+/// let typed_val1 = GF(5u8);
+/// let typed_val2 = GF256::new(5);
+/// assert_eq!(typed_val1, typed_val2)
+/// ```
+///
+/// Supports all basic Mathemtaical Functions
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct GF<T>(pub T);
 
@@ -81,7 +105,6 @@ pub type GFU16 = GF<u16>;
 pub type GFU32 = GF<u32>;
 pub type GFU64 = GF<u64>;
 pub type GFU128 = GF<u128>;
-
 
 // TODO: Generate with build script
 const LOGTABLE: [usize; 256] = [
@@ -144,8 +167,6 @@ const ALOGTABLE: [u8; 1025] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 ];
 
-
-
 impl Field for GF<u8> {
     const ZERO: Self = Self(0);
     const ONE: Self = Self(1);
@@ -160,7 +181,7 @@ impl Field for GF<u8> {
 
 impl MulAssign for GF<u8> {
     fn mul_assign(&mut self, rhs: GF256) {
-        *self = GF(ALOGTABLE[(LOGTABLE[self.idx()]|0) + (LOGTABLE[rhs.idx()]|0)]|0);
+        *self = GF(ALOGTABLE[(LOGTABLE[self.idx()] | 0) + (LOGTABLE[rhs.idx()] | 0)] | 0);
     }
 }
 
