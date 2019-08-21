@@ -7,6 +7,7 @@ pub trait Field:
     'static
     + Sized
     + Eq
+    + PartialEq
     + Copy
     + Clone
     + Send
@@ -15,28 +16,50 @@ pub trait Field:
     + Display
     + Add<Output = Self>
     + AddAssign
+    + Sub<Output = Self>
+    + SubAssign
     + Div<Output = Self>
     + DivAssign
     + Mul<Output = Self>
     + MulAssign
     + Neg<Output = Self>
-    + Sub<Output = Self>
-    + SubAssign
 {
-    /// Returns the zero element of the field, the additive identity.
-    fn zero() -> Self;
+    const ZERO: Self;
+    const ONE: Self;
 
-    /// Returns the one element of the field, the multiplicative identity.
-    fn one() -> Self;
+    fn zero() -> Self {
+        Self::ZERO
+    }
 
-    /// Returns true iff this element is zero.
-    fn is_zero(&self) -> bool;
+    fn is_zero(&self) -> bool {
+        *self == Self::ZERO
+    }
 
-    /// Computes the multiplicative inverse of this element, if nonzero.
+    fn one() -> Self {
+        Self::ONE
+    }
+
     fn inverse(&self) -> Option<Self>;
 
-    /// Squares this element.
-    fn square(&mut self);
+    fn pow(self, exp: u8) -> Self {
+        let mut res = Self::one();
+        for i in 0..8 {
+            res.square();
+            let mut tmp = res;
+            tmp.mul_assign(self);
+            if (((exp >> i) & 0x01) as u8) != 0 {
+                res = tmp
+            }
+        }
+        if exp.eq(&0) {
+            res = Self::one()
+        }
+        res
+    }
+
+    fn square(&mut self) {
+        *self *= *self
+    }
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -44,60 +67,28 @@ pub struct GF<T>(pub T);
 
 pub type GF256 = GF<u8>;
 
-impl GF256 {
-    pub fn pow(self, elem: u8) -> Self {
-        let mut res = GF256::one();
-        for i in 0..8 {
-            res.square();
-            let mut tmp = res;
-            tmp.mul_assign(self);
-            if (((elem >> i) & 0x01) as u8) != 0 {
-                res = tmp
-            }
-        }
-        if elem.eq(&0) {
-            res = GF256::one()
-        }
-        res
-    }
-}
-
 impl Field for GF256 {
-    /// Returns the zero element of the field (additive identity)
-    fn zero() -> Self {
-        GF(0)
-    }
+    const ZERO: Self = Self(0);
+    const ONE: Self = Self(1);
 
-    /// Returns the zero element of the field (multiplicative identity)
-    fn one() -> Self {
-        GF(1)
-    }
-
-    /// Returns true if this element is the additive identity
-    fn is_zero(&self) -> bool {
-        self.0.eq(&0).into()
-    }
-
-    /// Squares the element
-    fn square(&mut self) {
-        self.mul_assign(*self);
-    }
-
-    /// Returns multiplicative inverse (self^254)
     fn inverse(&self) -> Option<Self> {
-        let mut res = *self;
+        if self.is_zero() {
+            None
+        } else {
+            let mut res = *self;
 
-        for _ in 0..6 {
+            for _ in 0..6 {
+                res.square();
+                res.mul_assign(*self);
+            }
+
             res.square();
-            res.mul_assign(*self);
-        }
+            if self.is_zero() {
+                res = Self::zero();
+            }
 
-        res.square();
-        if self.0.eq(&0x00) {
-            res = GF256::zero();
+            Some(res)
         }
-
-        Some(res)
     }
 }
 
