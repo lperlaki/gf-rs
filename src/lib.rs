@@ -82,6 +82,8 @@ pub trait Field:
 /// # The Golias Field Type.
 ///
 /// ```
+/// use gf::{GF, GF256};
+/// 
 /// let val = GF(4);
 ///
 /// let typed_val1 = GF(5u8);
@@ -270,7 +272,7 @@ impl<T> Neg for GF<T> {
 
 #[cfg(test)]
 mod tests {
-    use crate::GF;
+    use crate::{Field, GF};
     #[test]
     fn add_sub() {
         assert_eq!((GF(5) + GF(60)) - GF(5), GF(60))
@@ -279,5 +281,10 @@ mod tests {
     #[test]
     fn mul_div() {
         assert_eq!((GF(5) * GF(60)) / GF(5), GF(60))
+    }
+
+    #[test]
+    fn pow() {
+        assert_eq!(GF(5).pow(0), GF(1))
     }
 }
