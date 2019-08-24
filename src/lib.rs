@@ -59,21 +59,7 @@ pub trait Field:
 
     fn inverse(&self) -> Self;
 
-    fn pow(self, exp: u8) -> Self {
-        let mut res = Self::one();
-        for i in 0..8 {
-            res.square();
-            let mut tmp = res;
-            tmp.mul_assign(self);
-            if (((exp >> i) & 0x01) as u8) != 0 {
-                res = tmp
-            }
-        }
-        if exp.eq(&0) {
-            res = Self::one()
-        }
-        res
-    }
+    fn pow(self, exp: usize) -> Self;
 
     fn square(&mut self) {
         *self *= *self
@@ -181,6 +167,14 @@ impl Field for GF<u8> {
     }
     fn idx(&self) -> usize {
         self.0 as usize
+    }
+
+    fn pow(self, pow: usize) -> Self {
+        if self.is_zero() && pow != 0 {
+            Self::zero()
+        } else {
+            Self(ALOGTABLE[pow*LOGTABLE[self.idx()] % 255])
+        }
     }
 }
 
@@ -308,4 +302,5 @@ mod tests {
     fn pow() {
         assert_eq!(GF(5).pow(0), GF(1))
     }
+    
 }
