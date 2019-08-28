@@ -173,7 +173,7 @@ impl Field for GF<u8> {
         if self.is_zero() && pow != 0 {
             Self::zero()
         } else {
-            Self(ALOGTABLE[pow*LOGTABLE[self.idx()] % 255])
+            Self(ALOGTABLE[pow * LOGTABLE[self.idx()] % 255])
         }
     }
 }
@@ -285,6 +285,34 @@ impl<T> Neg for GF<T> {
     }
 }
 
+macro_rules! impl_conv {
+    ($type:ty) => {
+        impl From<$type> for GF<$type> {
+            fn from(u: $type) -> Self {
+                Self(u)
+            }
+        }
+
+        impl Into<$type> for GF<$type> {
+            fn into(self) -> $type {
+                self.0
+            }
+        }
+    };
+}
+
+impl_conv!(u8);
+impl_conv!(u16);
+impl_conv!(u32);
+impl_conv!(u64);
+impl_conv!(u128);
+
+impl_conv!(i8);
+impl_conv!(i16);
+impl_conv!(i32);
+impl_conv!(i64);
+impl_conv!(i128);
+
 #[cfg(test)]
 mod tests {
     use crate::{Field, GF};
@@ -310,5 +338,11 @@ mod tests {
     fn pow2() {
         assert_eq!(GF(4).pow(2), GF(4) * GF(4))
     }
-    
+
+    #[test]
+    fn conv() {
+        assert_eq!(GF::from(34u8),  GF(34u8));
+        let x: u8 = GF(34u8).into();
+        assert!(x == 34);
+    }
 }
