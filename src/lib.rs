@@ -1,3 +1,4 @@
+#![no_std]
 //! # Galois Field
 //!
 //! finite field arithmetic
@@ -10,8 +11,8 @@
 //! println!("{}", x + y);
 //! ```
 
-use std::{
-    fmt::{Debug, Display, Formatter},
+use core::{
+    fmt::{self, Debug, Display, Formatter},
     iter::{Product, Sum},
     ops::{Add, AddAssign, BitXor, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
@@ -189,7 +190,7 @@ impl DivAssign for GF<u8> {
 }
 
 impl<T: Display> Display for GF<T> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
     }
 }
