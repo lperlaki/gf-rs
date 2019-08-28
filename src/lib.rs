@@ -300,5 +300,13 @@ mod tests {
     fn pow() {
         assert_eq!(GF(5).pow(0), GF(1))
     }
+    #[test]
+    fn pow1() {
+        assert_eq!(GF(5).pow(1), GF(5))
+    }
+    #[test]
+    fn pow2() {
+        assert_eq!(GF(4).pow(2), GF(4) * GF(4))
+    }
     
 }
