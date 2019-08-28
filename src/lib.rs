@@ -64,6 +64,7 @@ pub trait Field:
         *self *= *self
     }
 
+    // Convert the inner value to usize
     fn idx(&self) -> usize;
 }
 
