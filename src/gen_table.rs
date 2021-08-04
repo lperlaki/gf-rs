@@ -31,13 +31,6 @@ pub const fn gen_tables_u8() -> ([usize; 256], [u8; 1025]) {
 
     alogtable[510] = 1;
 
-    let mut i = 511;
-
-    while i < 1020 {
-        alogtable[i] = 0;
-
-        i += 1;
-    }
 
     (logtable, alogtable)
 }
