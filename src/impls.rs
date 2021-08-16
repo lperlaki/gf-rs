@@ -2,9 +2,11 @@ use core::{
     iter::{Product, Sum},
     ops::{
         Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Div,
-        DivAssign, Mul, MulAssign, Neg, Not, Rem, RemAssign, Sub, SubAssign,
+        DivAssign, Mul, MulAssign, Neg, Not, Sub, SubAssign,
     },
 };
+
+use num_traits::{Inv, One, Pow, Zero};
 
 use crate::GF;
 
@@ -78,8 +80,20 @@ macro_rules! gf_impl_conv {
         }
 
         impl From<GF<$type>> for $type {
-            fn from(u: GF<$type>) -> Self {
-                u.0
+            fn from(GF(u): GF<$type>) -> Self {
+                u
+            }
+        }
+
+        impl AsRef<GF<$type>> for $type {
+            fn as_ref(&self) -> &GF<$type> {
+                GF::from_ref(self)
+            }
+        }
+
+        impl AsMut<GF<$type>> for $type {
+            fn as_mut(&mut self) -> &mut GF<$type> {
+                GF::from_mut(self)
             }
         }
     };
@@ -89,6 +103,15 @@ macro_rules! gf_impl_add {
     ($t:ty) => {
         impl GF<$t> {
             const ZERO: Self = Self(0);
+        }
+
+        impl Zero for GF<$t> {
+            fn zero() -> Self {
+                Self::ZERO
+            }
+            fn is_zero(&self) -> bool {
+                *self == Self::ZERO
+            }
         }
 
         impl Add for GF<$t> {
@@ -219,7 +242,7 @@ macro_rules! gf_impl_mul {
         impl GF<$t> {
             const ONE: Self = Self(1);
 
-            pub fn inverse(self) -> Self {
+            pub fn inv(self) -> Self {
                 Self(ALOGTABLE[255 - (LOGTABLE[self.idx()] % 255)])
             }
 
@@ -236,12 +259,47 @@ macro_rules! gf_impl_mul {
             }
         }
 
+        impl One for GF<$t> {
+            fn one() -> Self {
+                Self::ONE
+            }
+        }
+
+        impl Pow<$t> for GF<$t> {
+            type Output = Self;
+
+            fn pow(self, other: $t) -> Self {
+                self.pow(other as usize)
+            }
+        }
+
+        forward_ref_binop! { impl Pow, pow for GF<$t>, $t }
+
+        impl Pow<usize> for GF<$t> {
+            type Output = Self;
+
+            fn pow(self, other: usize) -> Self {
+                self.pow(other)
+            }
+        }
+        forward_ref_binop! { impl Pow, pow for GF<$t>, usize }
+
+        impl Inv for GF<$t> {
+            type Output = Self;
+
+            fn inv(self) -> Self::Output {
+                self.inv()
+            }
+        }
+
+        forward_ref_unop! { impl Inv, inv for GF<$t> }
+
         impl Mul for GF<$t> {
             type Output = GF<$t>;
 
             #[inline]
             fn mul(self, other: GF<$t>) -> GF<$t> {
-                GF(ALOGTABLE[(LOGTABLE[self.idx()] | 0) + (LOGTABLE[other.idx()] | 0)] | 0)
+                GF(ALOGTABLE[(LOGTABLE[self.idx()]) + (LOGTABLE[other.idx()])])
             }
         }
         forward_ref_binop! { impl Mul, mul for GF<$t>, GF<$t> }
@@ -259,6 +317,7 @@ macro_rules! gf_impl_mul {
 
             #[inline]
             fn div(self, other: GF<$t>) -> GF<$t> {
+                assert!(other != Self::ZERO, "attempt to divide by zero");
                 GF(ALOGTABLE[LOGTABLE[self.idx()] + 255 - LOGTABLE[other.idx()]])
             }
         }

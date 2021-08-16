@@ -31,13 +31,19 @@ const TABLES_U8: ([usize; 256], [u8; 1025]) = gen_table::gen_tables_u8();
 /// ```
 ///
 /// Supports all basic Mathemtaical Functions
-#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Default, Hash)]
+#[derive(PartialEq, Eq, Clone, Copy, Default, Hash, Debug)]
 #[repr(transparent)]
 pub struct GF<T>(pub T);
 
-impl<T: fmt::Debug> fmt::Debug for GF<T> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.fmt(f)
+pub type GF256 = GF<u8>;
+
+impl<T> GF<T> {
+    pub fn from_ref<'a>(u: &'a T) -> &'a Self {
+        unsafe { &*(u as *const T as *const Self) }
+    }
+
+    pub fn from_mut<'a>(u: &'a mut T) -> &'a mut Self {
+        unsafe { &mut *(u as *mut T as *mut Self) }
     }
 }
 
@@ -102,5 +108,12 @@ mod tests {
         assert_eq!(GF::from(34u8), GF(34u8));
         let x: u8 = GF(34u8).into();
         assert!(x == 34);
+    }
+
+    #[test]
+    fn test_ref() {
+        let mut a = 5u8;
+        *a.as_mut() += GF(10);
+        assert_eq!(a, (GF(5u8) + GF(10)).0)
     }
 }
