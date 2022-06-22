@@ -1,4 +1,3 @@
-#![no_std]
 //! # Galois Field
 //!
 //! finite field arithmetic
@@ -10,13 +9,19 @@
 //! let y = GF(225u8);
 //! println!("{}", x + y);
 //! ```
+// #![no_std]
+#![cfg_attr(feature = "unstable_simd", feature(portable_simd))]
 
 use core::fmt;
 
 mod gen_table;
 mod impls;
 
-const TABLES_U8: ([usize; 256], [u8; 1025]) = gen_table::gen_tables_u8();
+#[cfg(feature = "unstable_simd")]
+mod simd;
+
+#[cfg(feature = "unstable_simd")]
+pub use simd::GF256Simd;
 
 /// # The Golias Field Type.
 ///
@@ -38,12 +43,24 @@ pub struct GF<T>(pub T);
 pub type GF256 = GF<u8>;
 
 impl<T> GF<T> {
-    pub fn from_ref<'a>(u: &'a T) -> &'a Self {
+    #[inline]
+    pub fn from_ref(u: &T) -> &Self {
         unsafe { &*(u as *const T as *const Self) }
     }
 
-    pub fn from_mut<'a>(u: &'a mut T) -> &'a mut Self {
+    #[inline]
+    pub fn from_mut(u: &mut T) -> &mut Self {
         unsafe { &mut *(u as *mut T as *mut Self) }
+    }
+
+    #[inline]
+    pub fn from_slice(slice: &[T]) -> &[Self] {
+        unsafe { core::slice::from_raw_parts(slice.as_ptr() as *const Self, slice.len()) }
+    }
+
+    #[inline]
+    pub fn from_slice_mut(slice: &mut [T]) -> &mut [Self] {
+        unsafe { core::slice::from_raw_parts_mut(slice.as_mut_ptr() as *mut Self, slice.len()) }
     }
 }
 
@@ -108,12 +125,5 @@ mod tests {
         assert_eq!(GF::from(34u8), GF(34u8));
         let x: u8 = GF(34u8).into();
         assert!(x == 34);
-    }
-
-    #[test]
-    fn test_ref() {
-        let mut a = 5u8;
-        *a.as_mut() += GF(10);
-        assert_eq!(a, (GF(5u8) + GF(10)).0)
     }
 }

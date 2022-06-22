@@ -1,8 +1,11 @@
+#![cfg_attr(feature = "simd", feature(portable_simd))]
+
 use gf::GF;
+
 use rand::Rng;
 
-const LOGTABLE: [u8; 256] = [
-    0, 255, 1, 25, 2, 50, 26, 198, 3, 223, 51, 238, 27, 104, 199, 75, 4, 100, 224, 14, 52, 141,
+const _LOGTABLE: [usize; 256] = [
+    512, 255, 1, 25, 2, 50, 26, 198, 3, 223, 51, 238, 27, 104, 199, 75, 4, 100, 224, 14, 52, 141,
     239, 129, 28, 193, 105, 248, 200, 8, 76, 113, 5, 138, 101, 47, 225, 36, 15, 33, 53, 147, 142,
     218, 240, 18, 130, 69, 29, 181, 194, 125, 106, 39, 249, 185, 201, 154, 9, 120, 77, 228, 114,
     166, 6, 191, 139, 98, 102, 221, 48, 253, 226, 152, 37, 179, 16, 145, 34, 136, 54, 208, 148,
@@ -17,7 +20,7 @@ const LOGTABLE: [u8; 256] = [
     232, 116, 214, 244, 234, 168, 80, 88, 175,
 ];
 
-const ALOGTABLE: [u8; 512] = [
+const _ALOGTABLE: [u8; 1025] = [
     1, 2, 4, 8, 16, 32, 64, 128, 29, 58, 116, 232, 205, 135, 19, 38, 76, 152, 45, 90, 180, 117,
     234, 201, 143, 3, 6, 12, 24, 48, 96, 192, 157, 39, 78, 156, 37, 74, 148, 53, 106, 212, 181,
     119, 238, 193, 159, 35, 70, 140, 5, 10, 20, 40, 80, 160, 93, 186, 105, 210, 185, 111, 222, 161,
@@ -42,99 +45,112 @@ const ALOGTABLE: [u8; 512] = [
     219, 171, 75, 150, 49, 98, 196, 149, 55, 110, 220, 165, 87, 174, 65, 130, 25, 50, 100, 200,
     141, 7, 14, 28, 56, 112, 224, 221, 167, 83, 166, 81, 162, 89, 178, 121, 242, 249, 239, 195,
     155, 43, 86, 172, 69, 138, 9, 18, 36, 72, 144, 61, 122, 244, 245, 247, 243, 251, 235, 203, 139,
-    11, 22, 44, 88, 176, 125, 250, 233, 207, 131, 27, 54, 108, 216, 173, 71, 142, 1, 0,
+    11, 22, 44, 88, 176, 125, 250, 233, 207, 131, 27, 54, 108, 216, 173, 71, 142, 1, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 ];
 
-fn gf_add(a: u8, b: u8) -> u8 {
-    // return a ^ b;
-    (GF(a) + GF(b)).0
+// FIXME: decreases performance by 10x
+#[cfg(feature = "simd")]
+#[inline]
+fn poly(input: &[u8], x: u8) -> u8 {
+    use core::simd::Simd;
+
+    const SELECT: Simd<usize, 32> = Simd::from_array([
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+        25, 26, 27, 28, 29, 30, 31,
+    ]);
+
+    // max input len is 32 bytes
+
+    let vals = Simd::gather_or_default(input, SELECT);
+
+    (GF::splat(x).pow(SELECT) * GF(vals)).sum_lanes()
 }
 
-fn gf_mult(a: u8, b: u8) -> u8 {
-    //return ALOGTABLE[ ( (LOGTABLE[a as usize] as usize) | 0) + ((LOGTABLE[b as usize] as usize) | 0)] | 0;
-    (GF(a) * GF(b)).0
+#[cfg(not(feature = "simd"))]
+#[inline]
+fn poly(input: &[u8], x: u8) -> u8 {
+    // x^n * inp[n] + x^n-1 * inp[n-1] + ... + x^0 * inp[0]
+    input
+        .iter()
+        .enumerate()
+        .map(|(i, b)| GF(x).pow(i) * GF(*b))
+        .sum::<GF<u8>>()
+        .into()
 }
 
-fn gf_pow(a: u8, p: u8) -> u8 {
-    // if a == 0 && p != 0 {
-    //     return 0;
-    // }
-    // else {
-    //     return ALOGTABLE[ p as usize * LOGTABLE[a as usize] as usize % 255 ];
-    // }
-    (GF(a).pow(p as usize)).0
+pub fn share(
+    data: impl AsRef<[u8]>,
+    threshold: u8,
+    mut rng: impl rand::RngCore + rand::CryptoRng,
+) -> impl Iterator<Item = (u8, Box<[u8]>)> {
+    let mut buf = vec![0u8; data.as_ref().len() * threshold as usize].into_boxed_slice();
+
+    rng.fill_bytes(&mut buf);
+
+    buf.chunks_mut(threshold as usize)
+        .zip(data.as_ref())
+        .for_each(|(chunk, byte)| {
+            chunk[0] = *byte;
+        });
+
+    (1..).map(move |x| {
+        (
+            x,
+            buf.chunks(threshold as usize)
+                .map(|chunk| poly(chunk, x))
+                .collect(),
+        )
+    })
 }
 
-fn gf_div(p: u8, q: u8) -> u8 {
-    //return ALOGTABLE[ LOGTABLE[p as usize] as usize + 255 - LOGTABLE[q as usize] as usize ];
-    (GF(p) / GF(q)).0
+/// the formula:
+/// ${\displaystyle f(0)=\sum _{j=0}^{k-1}y_{j}\prod _{\begin{smallmatrix}m\,=\,0\\m\,\neq \,j\end{smallmatrix}}^{k-1}{\frac {x_{m}}{x_{m}-x_{j}}}}$
+fn interpolate(shares: impl Iterator<Item = (u8, u8)> + Clone) -> u8 {
+    shares
+        .clone()
+        .enumerate()
+        .map(|(i, (xi, share))| {
+            GF(share)
+                * shares
+                    .clone()
+                    .enumerate()
+                    .filter(|(j, _)| *j != i)
+                    .map(|(_, (xj, _))| GF(xj) / (GF(xi) - GF(xj)))
+                    .product::<GF<u8>>()
+        })
+        .sum::<GF<u8>>()
+        .into()
 }
 
-fn shamir_create_single_byte_share(
-    randoms: &Vec<u8>,
-    share_index: u8,
-    secret_byte: u8,
-) -> (u8, u8) {
-    let mut shared_byte: u8 = secret_byte;
-    for (i, random) in randoms.into_iter().enumerate() {
-        shared_byte = gf_add(
-            shared_byte,
-            gf_mult(*random, gf_pow(share_index, i as u8 + 1)),
-        );
-    }
-    return (shared_byte, share_index);
-}
-
-fn shamir_create_byte_shares(threshold: u8, number: u8, secret_byte: u8) -> Vec<(u8, u8)> {
-    let mut randoms: Vec<u8> = Vec::new();
-    for _ in 1..threshold {
-        randoms.push(rand::thread_rng().gen::<u8>());
-    }
-    let mut shared_bytes: Vec<(u8, u8)> = Vec::new();
-    for share_index in 1..=number {
-        shared_bytes.push(shamir_create_single_byte_share(
-            &randoms,
-            share_index,
-            secret_byte,
-        ));
-    }
-    return shared_bytes;
-}
-
-fn shamir_reconstruct_byte_from_shares(shares: &Vec<(u8, u8)>) -> u8 {
-    let mut secret_byte: u8 = 0;
-    let mut product: u8;
-    for (i, (share, x_i)) in shares.into_iter().enumerate() {
-        product = 1;
-        for (j, (_, x_j)) in shares.into_iter().enumerate() {
-            if i != j {
-                product = gf_mult(product, gf_div(*x_j, gf_add(*x_i, *x_j)));
-            }
-        }
-        secret_byte = gf_add(secret_byte, gf_mult(*share, product));
-    }
-    return secret_byte;
+pub fn reconstruct(shares: impl Iterator<Item = (u8, impl AsRef<[u8]>)> + Clone) -> Box<[u8]> {
+    let first_len = shares.clone().next().unwrap().1.as_ref().len();
+    (0..first_len)
+        .map(|i| interpolate(shares.clone().map(|(x, bytes)| (x, bytes.as_ref()[i]))))
+        .collect()
 }
 
 fn main() {
-    let k: u8 = 3;
-    let n: u8 = 100;
-    let s: u8 = 127;
+    let data = "hello world";
+    let shares = share(data, 4, rand::thread_rng())
+        .take(5)
+        .collect::<Vec<_>>();
 
-    println!("Secret byte: {}", s);
-
-    let mut shares: Vec<(u8, u8)> = shamir_create_byte_shares(k, n, s);
-
-    for i in 0..n {
-        println!("Share {}: {}", shares[i as usize].1, shares[i as usize].0);
-    }
-
-    shares.remove(1);
-    shares.remove(3);
-
-    println!("2 shares deleted!");
-
-    let reconstructed_byte: u8 = shamir_reconstruct_byte_from_shares(&shares);
-
-    println!("Reconstructed byte: {}", reconstructed_byte);
+    let reconstructed = reconstruct(shares.iter().map(|(c, x)| (*c, x)));
+    assert_eq!(&*reconstructed, data.as_bytes());
 }
