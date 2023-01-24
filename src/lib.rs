@@ -9,7 +9,7 @@
 //! let y = GF(225u8);
 //! println!("{}", x + y);
 //! ```
-// #![no_std]
+#![no_std]
 #![cfg_attr(feature = "unstable_simd", feature(portable_simd))]
 
 use core::fmt;
@@ -19,11 +19,10 @@ mod impls;
 
 #[cfg(feature = "unstable_simd")]
 mod simd;
-
 #[cfg(feature = "unstable_simd")]
 pub use simd::GF256Simd;
 
-/// # The Golias Field Type.
+/// # The Galois Field Type.
 ///
 /// ```
 /// use gf::GF;
@@ -35,7 +34,7 @@ pub use simd::GF256Simd;
 /// assert_eq!(typed_val1, typed_val2)
 /// ```
 ///
-/// Supports all basic Mathemtaical Functions
+/// Supports all basic Mathematical Functions
 #[derive(PartialEq, Eq, Clone, Copy, Default, Hash, Debug)]
 #[repr(transparent)]
 pub struct GF<T>(pub T);
@@ -45,22 +44,22 @@ pub type GF256 = GF<u8>;
 impl<T> GF<T> {
     #[inline]
     pub fn from_ref(u: &T) -> &Self {
-        unsafe { &*(u as *const T as *const Self) }
+        unsafe { &*(u as *const T).cast::<Self>() }
     }
 
     #[inline]
     pub fn from_mut(u: &mut T) -> &mut Self {
-        unsafe { &mut *(u as *mut T as *mut Self) }
+        unsafe { &mut *(u as *mut T).cast::<Self>() }
     }
 
     #[inline]
     pub fn from_slice(slice: &[T]) -> &[Self] {
-        unsafe { core::slice::from_raw_parts(slice.as_ptr() as *const Self, slice.len()) }
+        unsafe { core::slice::from_raw_parts(slice.as_ptr().cast::<Self>(), slice.len()) }
     }
 
     #[inline]
     pub fn from_slice_mut(slice: &mut [T]) -> &mut [Self] {
-        unsafe { core::slice::from_raw_parts_mut(slice.as_mut_ptr() as *mut Self, slice.len()) }
+        unsafe { core::slice::from_raw_parts_mut(slice.as_mut_ptr().cast::<Self>(), slice.len()) }
     }
 }
 
